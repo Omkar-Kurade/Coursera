@@ -1,11 +1,12 @@
-require("dotenv").config();
+// require("dotenv").config();
 const express = require("express");
 const { Router } = require("express");
 const { usermodule } = require("../db");
 const bcrypt = require("bcrypt");
 const { z } = require("zod");
 const jwt = require("jsonwebtoken");
-const secret = process.env.JWT_UsersSECRET;
+const { userSecret } = require("../config");
+// const secret = process.env.JWT_UsersSECRET;
 
 const userRouter = Router();
 
@@ -98,7 +99,7 @@ userRouter.post("/signin", async (req, res) => {
       {
         id: user._id.toString(),
       },
-      secret
+      userSecret
     );
     res.json({
       Message: "You are Successfuly login",

@@ -1,7 +1,17 @@
-require("dotenv").config();
 const jwt = require("jsonwebtoken");
-const secret = process.env.JWT_UsersSECRET;
+const { userSecret } = require("../config");
+function userAuth(req, res, next) {
+  const token = req.headers.token;
+  const decodedToken = jwt.verify(token, userSecret);
 
-function userAuth(req, res, next) {}
+  if (decodedToken) {
+    req.userId = decodedToken.id;
+    next();
+  } else {
+    res.status(403).json({
+      message: "You are not signed in!",
+    });
+  }
+}
 
 module.exports = { userAuth };

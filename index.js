@@ -1,12 +1,12 @@
-require("dotenv").config();
 const express = require("express");
 const { userRouter } = require("./routes/user");
 const { courseRouter } = require("./routes/course");
 const { adminRouter } = require("./routes/admin");
+const { port, db } = require("./config");
 const mongoose = require("mongoose");
 
-const port = process.env.PORT;
-const db = process.env.DB_URL;
+// const port = process.env.PORT;
+// const db = process.env.DB_URL;
 
 const app = express();
 app.use(express.json());

@@ -1,10 +1,12 @@
-require("dotenv").config();
 const { Router } = require("express");
-const { adminmodule } = require("../db");
+const { adminmodule, coursemodule } = require("../db");
 const bcrypt = require("bcrypt");
 const { z } = require("zod");
 const jwt = require("jsonwebtoken");
-const secret = process.env.JWT_AdminSECRET;
+const { adminSecret } = require("../config");
+const { adminAuth } = require("../middleware/adminAuth");
+const { Types } = require("mongoose");
+const ObjectId = Types.ObjectId;
 
 const adminRouter = Router();
 
@@ -96,7 +98,7 @@ adminRouter.post("/signin", async (req, res) => {
       {
         id: admin._id.toString(),
       },
-      secret
+      adminSecret
     );
     res.json({
       Message: "You are Successfuly login",
@@ -109,21 +111,98 @@ adminRouter.post("/signin", async (req, res) => {
   }
 });
 
-adminRouter.post("/course", (req, res) => {
-  res.json({
-    message: " admin Create a course",
+adminRouter.post("/course", adminAuth, async (req, res) => {
+  const adminId = req.adminId;
+  const requiredBody = z.object({
+    title: z.string(),
+    description: z.string(),
+    price: z.number(),
+    imageUrl: z.string(),
   });
+
+  const parcedData = requiredBody.safeParse(req.body);
+  if (!parcedData.success) {
+    return res.status(400).json({
+      message: "Incorrect Formate",
+      Error: parcedData.error.errors.map((err) => err.message),
+    });
+  }
+
+  const { title, description, price, imageUrl } = req.body;
+
+  try {
+    const course = await coursemodule.create({
+      title: title,
+      description: description,
+      price: price,
+      imageUrl: imageUrl,
+      createrId: adminId,
+    });
+
+    res.json({
+      message: "Course Created",
+      courseId: course._id,
+    });
+  } catch (error) {
+    res.json({
+      message: "Unable to create Course",
+    });
+  }
 });
 
-adminRouter.put("/course", (req, res) => {
+adminRouter.put("/course", adminAuth, async (req, res) => {
+  const adminId = req.adminId;
+
+  const requiredBody = z.object({
+    title: z.string(),
+    description: z.string(),
+    price: z.number(),
+    imageUrl: z.string(),
+    courseId: z.string().refine((val) => ObjectId.isValid(val), {
+      message: "Invalid courseId format (must be a valid ObjectId)",
+    }),
+  });
+
+  const parcedData = requiredBody.safeParse(req.body);
+  if (!parcedData.success) {
+    return res.status(400).json({
+      message: "Incorrect Formate",
+      Error: parcedData.error.errors.map((err) => err.message),
+    });
+  }
+
+  const { title, description, price, imageUrl, courseId } = req.body;
+
+  const course = await coursemodule.updateOne(
+    { _id: courseId, createrId: adminId },
+    {
+      title: title,
+      description: description,
+      price: price,
+      imageUrl: imageUrl,
+    }
+  );
+
   res.json({
-    message: " admin Create a course",
+    message: "Course Updated!",
+    courseId: course._id,
   });
 });
-adminRouter.get("/course/bulk", (req, res) => {
-  res.json({
-    message: " admin Create a course",
-  });
+adminRouter.get("/course/bulk", adminAuth, async (req, res) => {
+  const adminId = req.adminId;
+
+  try {
+    const courses = await coursemodule.find({
+      createrId: adminId,
+    });
+    res.json({
+      courses,
+    });
+  } catch (error) {
+    res.status(404).json({
+      message: `${error} "Courses not Found "`,
+    });
+  }
 });
 
 module.exports = { adminRouter: adminRouter };
