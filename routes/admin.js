@@ -173,20 +173,26 @@ adminRouter.put("/course", adminAuth, async (req, res) => {
 
   const { title, description, price, imageUrl, courseId } = req.body;
 
-  const course = await coursemodule.updateOne(
-    { _id: courseId, createrId: adminId },
-    {
-      title: title,
-      description: description,
-      price: price,
-      imageUrl: imageUrl,
-    }
-  );
+  try {
+    const course = await coursemodule.updateOne(
+      { _id: courseId, createrId: adminId },
+      {
+        title: title,
+        description: description,
+        price: price,
+        imageUrl: imageUrl,
+      }
+    );
 
-  res.json({
-    message: "Course Updated!",
-    courseId: course._id,
-  });
+    res.json({
+      message: "Course Updated!",
+      courseId: course._id,
+    });
+  } catch (error) {
+    res.status(400).json({
+      message: "Unable to update Course!",
+    });
+  }
 });
 adminRouter.get("/course/bulk", adminAuth, async (req, res) => {
   const adminId = req.adminId;
